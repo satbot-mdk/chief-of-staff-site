@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/newsreader/v20/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438w.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/newsreader/v20/cY9kfjOCX1hbuyalUrK439vogqC9yFZCYg7oRZaLP4obnf7fTXglsMyoSOcZ.woff2') format('woff2');
+}
+
+:root {
+  --cream: #faf6ef;
+  --ink: #2c2416;
+  --warm: #8b6f47;
+  --sage: #7a9178;
+  --sky: #9bb8c7;
+  --rose: #c4877a;
+  --paper: #f0e8d8;
+  --gold: #c9a84c;
+}
+
+body {
+  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+  background-color: var(--cream);
+  color: var(--ink);
+}
+
+/* hand-drawn border effect */
+.sketch-border {
+  border: 2px solid var(--ink);
+  border-radius: 12px 4px 12px 4px;
+  box-shadow: 2px 3px 0 rgba(44, 36, 22, 0.08);
+}
+
+.sketch-card {
+  background: var(--paper);
+  border: 1.5px solid rgba(44, 36, 22, 0.15);
+  border-radius: 8px 3px 8px 3px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sketch-card:hover {
+  transform: translateY(-2px) rotate(-0.3deg);
+  box-shadow: 3px 4px 0 rgba(44, 36, 22, 0.1);
+}
+
+/* wiggly underline */
+.wiggly {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--sage);
+  text-underline-offset: 4px;
+}
+
+/* button with organic feel */
+.btn-primary {
+  background: var(--ink);
+  color: var(--cream);
+  padding: 14px 32px;
+  border-radius: 8px 4px 8px 4px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 3px 3px 0 rgba(44, 36, 22, 0.15);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px) rotate(-0.5deg);
+  box-shadow: 4px 5px 0 rgba(44, 36, 22, 0.2);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 rgba(44, 36, 22, 0.1);
+}
+
+/* subtle paper texture */
+.paper-bg {
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* flowing divider */
+.divider-wave {
+  width: 120px;
+  height: 12px;
+  margin: 0 auto;
+  background: url("data:image/svg+xml,%3Csvg width='120' height='12' viewBox='0 0 120 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 6 Q15 0 30 6 Q45 12 60 6 Q75 0 90 6 Q105 12 120 6' fill='none' stroke='%238b6f47' stroke-width='1.5' opacity='0.4'/%3E%3C/svg%3E") no-repeat center;
+}
+
+::selection {
+  background: rgba(201, 168, 76, 0.3);
+}
