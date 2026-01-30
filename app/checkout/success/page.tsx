@@ -21,11 +21,18 @@ export default function SuccessPage() {
       return
     }
 
+    const ghUser = metadata?.githubUsername
+    if (!ghUser) {
+      setFulfillError('No GitHub username found. Contact support.')
+      setFulfillState('error')
+      return
+    }
+
     setFulfillState('loading')
     fetch('/api/fulfill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ checkoutId }),
+      body: JSON.stringify({ checkoutId, githubUsername: ghUser }),
     })
       .then(async (res) => {
         const data = await res.json()
