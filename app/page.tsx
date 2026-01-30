@@ -34,9 +34,14 @@ export default function HomePage() {
   const { createCheckout, isLoading } = useCheckout()
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState('base')
+  const [githubUsername, setGithubUsername] = useState('')
 
   const handlePurchase = async () => {
     setError(null)
+    if (!githubUsername.trim()) {
+      setError('GitHub username is required — we need it to grant you repo access.')
+      return
+    }
     const result = await createCheckout({
       type: 'AMOUNT',
       title: 'Chief of Staff Starter Kit',
@@ -48,6 +53,7 @@ export default function HomePage() {
         product: 'chief-of-staff-starter-kit',
         version: '1.0.0',
         personality: selected,
+        githubUsername: githubUsername.trim(),
       }
     })
     if (result.error) {
@@ -120,6 +126,48 @@ export default function HomePage() {
           follow-up tracker. Five minutes to set up. Runs on pennies.
         </p>
 
+        <div style={{
+          maxWidth: 320,
+          margin: '0 auto 20px',
+          textAlign: 'left',
+        }}>
+          <label style={{
+            display: 'block',
+            fontSize: '0.85rem',
+            color: 'rgba(44, 36, 22, 0.6)',
+            marginBottom: 6,
+            fontWeight: 500,
+          }}>
+            GitHub username
+          </label>
+          <input
+            type="text"
+            value={githubUsername}
+            onChange={(e) => setGithubUsername(e.target.value)}
+            placeholder="octocat"
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              fontSize: '1rem',
+              fontFamily: 'ui-monospace, monospace',
+              border: '1.5px solid rgba(44, 36, 22, 0.15)',
+              borderRadius: '8px',
+              background: 'var(--paper)',
+              color: 'var(--ink)',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <p style={{
+            fontSize: '0.78rem',
+            color: 'rgba(44, 36, 22, 0.4)',
+            marginTop: 6,
+            fontStyle: 'italic',
+          }}>
+            After payment, you&apos;ll get a collaborator invite to the private repo.
+          </p>
+        </div>
+
         <button
           onClick={handlePurchase}
           disabled={isLoading}
@@ -137,7 +185,7 @@ export default function HomePage() {
           fontSize: '0.8rem',
           color: 'rgba(44, 36, 22, 0.4)',
         }}>
-          All three personalities included · One-time purchase · Lightning&nbsp;⚡
+          One-time purchase · Repo access included · Lightning&nbsp;⚡
         </p>
       </header>
 
@@ -163,7 +211,7 @@ export default function HomePage() {
           marginBottom: 36,
           fontSize: '0.95rem',
         }}>
-          Same capabilities. Different vibes. All three included in the kit.
+          Same capabilities. Different vibes. Pick the one that fits.
         </p>
 
         <div style={{
