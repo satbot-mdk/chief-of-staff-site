@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createMoneyDevKitClient } from '@moneydevkit/core'
 
 const GITHUB_TOKEN = process.env.GITHUB_PAT || ''
 const REPO_OWNER = 'satbot-mdk'
 const REPO_NAME = 'chief-of-staff-kit'
-const MDK_ACCESS_TOKEN = process.env.MDK_ACCESS_TOKEN || ''
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,23 +13,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing checkoutId' }, { status: 400 })
     }
 
-    // 1. Verify the checkout is actually paid via MDK API
-    const checkoutRes = await fetch(`https://api.moneydevkit.com/v1/checkouts/${checkoutId}`, {
-      headers: { Authorization: `Bearer ${MDK_ACCESS_TOKEN}` },
-    })
-
-    if (!checkoutRes.ok) {
+    // 1. Verify checkout via MDK SDK
+    const client = createMoneyDevKitClient()
+    let checkout
+    try {
+      checkout = await client.checkouts.get({ id: checkoutId })
+    } catch (err) {
+      console.error('MDK getCheckout error:', err)
       return NextResponse.json({ error: 'Could not verify payment' }, { status: 400 })
     }
 
-    const checkout = await checkoutRes.json()
+    if (!checkout) {
+      return NextResponse.json({ error: 'Checkout not found' }, { status: 404 })
+    }
 
-    if (checkout.status !== 'PAID' && checkout.status !== 'COMPLETED') {
+    // Check payment status
+    const invoiceSettled = ((checkout as any).invoice?.amountSatsReceived ?? 0) > 0
+    const isPaid = checkout.status === 'PAYMENT_RECEIVED' || invoiceSettled
+
+    if (!isPaid) {
       return NextResponse.json({ error: 'Payment not confirmed yet' }, { status: 402 })
     }
 
     // 2. Extract GitHub username from checkout metadata
-    const githubUsername = checkout.metadata?.githubUsername
+    const githubUsername = (checkout as any).userMetadata?.githubUsername
     if (!githubUsername) {
       return NextResponse.json({ error: 'No GitHub username found in checkout' }, { status: 400 })
     }
@@ -46,7 +53,6 @@ export async function POST(req: NextRequest) {
     )
 
     if (checkRes.status === 204) {
-      // Already a collaborator
       return NextResponse.json({
         success: true,
         alreadyCollaborator: true,
