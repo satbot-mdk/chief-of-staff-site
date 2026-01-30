@@ -1,32 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GITHUB_PAT = process.env.GITHUB_PAT!
+const GITHUB_TOKEN = process.env.GITHUB_PAT || ''
 const REPO_OWNER = 'satbot-mdk'
 const REPO_NAME = 'chief-of-staff-kit'
-
-async function inviteCollaborator(username: string): Promise<{ ok: boolean; status: number; message: string }> {
-  const res = await fetch(
-    `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/collaborators/${encodeURIComponent(username)}`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `token ${GITHUB_PAT}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-      body: JSON.stringify({ permission: 'pull' }),
-    }
-  )
-
-  if (res.status === 201) {
-    return { ok: true, status: 201, message: 'Invitation sent' }
-  }
-  if (res.status === 204) {
-    return { ok: true, status: 204, message: 'Already a collaborator' }
-  }
-
-  const body = await res.text()
-  return { ok: false, status: res.status, message: body }
-}
+const MDK_ACCESS_TOKEN = process.env.MDK_ACCESS_TOKEN || ''
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,55 +13,82 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing checkoutId' }, { status: 400 })
     }
 
-    // Verify payment via MDK API
-    const mdkApiKey = process.env.MDK_ACCESS_TOKEN
-    if (!mdkApiKey) {
-      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-    }
-
+    // 1. Verify the checkout is actually paid via MDK API
     const checkoutRes = await fetch(`https://api.moneydevkit.com/v1/checkouts/${checkoutId}`, {
-      headers: {
-        Authorization: `Bearer ${mdkApiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${MDK_ACCESS_TOKEN}` },
     })
 
     if (!checkoutRes.ok) {
-      return NextResponse.json({ error: 'Could not verify checkout' }, { status: 400 })
+      return NextResponse.json({ error: 'Could not verify payment' }, { status: 400 })
     }
 
     const checkout = await checkoutRes.json()
 
-    // Check payment is actually complete
     if (checkout.status !== 'PAID' && checkout.status !== 'COMPLETED') {
       return NextResponse.json({ error: 'Payment not confirmed yet' }, { status: 402 })
     }
 
-    // Extract GitHub username from metadata
+    // 2. Extract GitHub username from checkout metadata
     const githubUsername = checkout.metadata?.githubUsername
     if (!githubUsername) {
-      return NextResponse.json({ error: 'No GitHub username in checkout' }, { status: 400 })
+      return NextResponse.json({ error: 'No GitHub username found in checkout' }, { status: 400 })
     }
 
-    // Invite as collaborator
-    const result = await inviteCollaborator(githubUsername)
+    // 3. Check if already a collaborator
+    const checkRes = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/collaborators/${githubUsername}`,
+      {
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+        },
+      }
+    )
 
-    if (!result.ok) {
-      console.error(`GitHub invite failed for ${githubUsername}:`, result)
-      return NextResponse.json(
-        { error: `Could not invite ${githubUsername}. Check the username is correct.`, detail: result.message },
-        { status: 422 }
-      )
+    if (checkRes.status === 204) {
+      // Already a collaborator
+      return NextResponse.json({
+        success: true,
+        alreadyCollaborator: true,
+        githubUsername,
+      })
+    }
+
+    // 4. Send collaborator invite
+    const inviteRes = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/collaborators/${githubUsername}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+        },
+        body: JSON.stringify({ permission: 'pull' }),
+      }
+    )
+
+    if (!inviteRes.ok) {
+      const errData = await inviteRes.json().catch(() => ({}))
+      console.error('GitHub invite failed:', inviteRes.status, errData)
+
+      if (inviteRes.status === 404) {
+        return NextResponse.json({
+          error: `GitHub user "${githubUsername}" not found. Double-check the username.`,
+        }, { status: 400 })
+      }
+
+      return NextResponse.json({
+        error: 'Failed to send GitHub invite. Please contact support.',
+      }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
+      alreadyCollaborator: false,
       githubUsername,
-      message: result.message,
-      alreadyCollaborator: result.status === 204,
     })
   } catch (err) {
     console.error('Fulfill error:', err)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
