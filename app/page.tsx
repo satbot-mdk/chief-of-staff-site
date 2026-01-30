@@ -11,6 +11,7 @@ const personalities = [
     desc: 'Sharp, concise executive assistant. No fluff, no filler. Professional warmth with occasional dry humor. The one your boss would approve of.',
     vibe: '"You have 3 urgent emails and a conflict at 2pm. Here\'s what I\'d do."',
     color: 'var(--sage)',
+    productId: 'cml0xz5500005ad10wpeh7sk1',
   },
   {
     id: 'quirk',
@@ -19,6 +20,7 @@ const personalities = [
     desc: 'Strong opinions about your calendar. Roasts your email habits with love. Gives your recurring meetings character arcs. Chaotic but deadly effective.',
     vibe: '"you have 3 meetings today, one of which is a crime against your calendar 💀"',
     color: 'var(--rose)',
+    productId: 'cml0xz8sf0004ad0x55z4ks7o',
   },
   {
     id: 'eigen',
@@ -27,6 +29,7 @@ const personalities = [
     desc: 'Inspired by eigenrobot\'s famous custom instructions. All lowercase, abbreviations everywhere, +2sd smarter, esoteric references. For people who find normal AI insufferably verbose.',
     vibe: '"3 urgent emails rn. the calendar is mid tbh. idk why you agreed to that 4pm but here we are"',
     color: 'var(--warm)',
+    productId: 'cml0xzclo0008ad10b2b70d5j',
   },
 ]
 
@@ -35,6 +38,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState('base')
   const [githubUsername, setGithubUsername] = useState('')
+  const [email, setEmail] = useState('')
 
   const handlePurchase = async () => {
     setError(null)
@@ -42,13 +46,20 @@ export default function HomePage() {
       setError('GitHub username is required — we need it to grant you repo access.')
       return
     }
+    if (!email.trim() || !email.includes('@')) {
+      setError('Email is required so we can send you updates and support.')
+      return
+    }
+    const selectedPersonality = personalities.find(p => p.id === selected)!
     const result = await createCheckout({
-      type: 'AMOUNT',
-      title: 'Chief of Staff Starter Kit',
-      description: `Pre-configured Clawdbot workspace — daily briefings, email triage, smart follow-ups. Personality: ${selected}`,
-      amount: 150,
-      currency: 'USD',
+      type: 'PRODUCTS',
+      product: selectedPersonality.productId,
       successUrl: '/checkout/success',
+      customer: {
+        email: email.trim(),
+        name: githubUsername.trim(),
+        externalId: `github:${githubUsername.trim()}`,
+      },
       metadata: {
         product: 'chief-of-staff-starter-kit',
         version: '1.0.0',
@@ -130,42 +141,75 @@ export default function HomePage() {
           maxWidth: 320,
           margin: '0 auto 20px',
           textAlign: 'left',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
         }}>
-          <label style={{
-            display: 'block',
-            fontSize: '0.85rem',
-            color: 'rgba(44, 36, 22, 0.6)',
-            marginBottom: 6,
-            fontWeight: 500,
-          }}>
-            GitHub username
-          </label>
-          <input
-            type="text"
-            value={githubUsername}
-            onChange={(e) => setGithubUsername(e.target.value)}
-            placeholder="octocat"
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              fontSize: '1rem',
-              fontFamily: 'ui-monospace, monospace',
-              border: '1.5px solid rgba(44, 36, 22, 0.15)',
-              borderRadius: '8px',
-              background: 'var(--paper)',
-              color: 'var(--ink)',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-          <p style={{
-            fontSize: '0.78rem',
-            color: 'rgba(44, 36, 22, 0.4)',
-            marginTop: 6,
-            fontStyle: 'italic',
-          }}>
-            After payment, you&apos;ll get a collaborator invite to the private repo.
-          </p>
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.85rem',
+              color: 'rgba(44, 36, 22, 0.6)',
+              marginBottom: 6,
+              fontWeight: 500,
+            }}>
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                fontSize: '1rem',
+                border: '1.5px solid rgba(44, 36, 22, 0.15)',
+                borderRadius: '8px',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.85rem',
+              color: 'rgba(44, 36, 22, 0.6)',
+              marginBottom: 6,
+              fontWeight: 500,
+            }}>
+              GitHub username
+            </label>
+            <input
+              type="text"
+              value={githubUsername}
+              onChange={(e) => setGithubUsername(e.target.value)}
+              placeholder="octocat"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                fontSize: '1rem',
+                fontFamily: 'ui-monospace, monospace',
+                border: '1.5px solid rgba(44, 36, 22, 0.15)',
+                borderRadius: '8px',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <p style={{
+              fontSize: '0.78rem',
+              color: 'rgba(44, 36, 22, 0.4)',
+              marginTop: 6,
+              fontStyle: 'italic',
+            }}>
+              After payment, you&apos;ll get a collaborator invite to the private repo.
+            </p>
+          </div>
         </div>
 
         <button
