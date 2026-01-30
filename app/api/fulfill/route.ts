@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createMoneyDevKitClient } from '@moneydevkit/core'
 
 const GITHUB_TOKEN = process.env.GITHUB_PAT || ''
 const REPO_OWNER = 'satbot-mdk'
@@ -24,7 +25,37 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if already a collaborator
+    // 1. Server-side payment verification via MDK SDK
+    const client = createMoneyDevKitClient()
+    let checkout
+    try {
+      checkout = await client.checkouts.get({ id: checkoutId })
+    } catch (err) {
+      console.error('MDK getCheckout error:', err)
+      return NextResponse.json({ error: 'Could not verify payment' }, { status: 400 })
+    }
+
+    if (!checkout) {
+      return NextResponse.json({ error: 'Checkout not found' }, { status: 404 })
+    }
+
+    const invoiceSettled = ((checkout as any).invoice?.amountSatsReceived ?? 0) > 0
+    const isPaid = checkout.status === 'PAYMENT_RECEIVED' || invoiceSettled
+
+    if (!isPaid) {
+      return NextResponse.json({ error: 'Payment not confirmed yet' }, { status: 402 })
+    }
+
+    // Verify the GitHub username matches what was in the checkout metadata
+    const metaUsername = (checkout as any).userMetadata?.githubUsername
+    if (metaUsername && metaUsername !== username) {
+      return NextResponse.json(
+        { error: 'GitHub username does not match checkout.' },
+        { status: 403 }
+      )
+    }
+
+    // 2. Check if already a collaborator
     const checkRes = await fetch(
       `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/collaborators/${username}`,
       {
@@ -43,7 +74,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Send collaborator invite (read-only access)
+    // 3. Send collaborator invite (read-only)
     const inviteRes = await fetch(
       `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/collaborators/${username}`,
       {
@@ -64,15 +95,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           error: `GitHub user "${username}" not found. Double-check the username.`,
         }, { status: 400 })
-      }
-
-      if (inviteRes.status === 422) {
-        // Usually means validation failed (e.g. can't invite yourself)
-        return NextResponse.json({
-          success: true,
-          alreadyCollaborator: true,
-          githubUsername: username,
-        })
       }
 
       return NextResponse.json({
