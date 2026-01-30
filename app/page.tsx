@@ -46,7 +46,7 @@ export default function HomePage() {
       type: 'AMOUNT',
       title: 'Chief of Staff Starter Kit',
       description: `Pre-configured Clawdbot workspace — daily briefings, email triage, smart follow-ups. Personality: ${selected}`,
-      amount: 500,
+      amount: 150,
       currency: 'USD',
       successUrl: '/checkout/success',
       metadata: {
@@ -173,7 +173,7 @@ export default function HomePage() {
           disabled={isLoading}
           className="btn-primary"
         >
-          {isLoading ? 'One moment…' : 'Get the kit — $5'}
+          {isLoading ? 'One moment…' : 'Get the kit — $1.50'}
         </button>
 
         {error && (
@@ -458,7 +458,7 @@ export default function HomePage() {
           disabled={isLoading}
           className="btn-primary"
         >
-          {isLoading ? 'One moment…' : 'Get the kit — $5'}
+          {isLoading ? 'One moment…' : 'Get the kit — $1.50'}
         </button>
         <p style={{
           marginTop: 16,
